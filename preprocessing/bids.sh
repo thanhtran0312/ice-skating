@@ -1,4 +1,4 @@
-# trying to change names to bid formats
+# trying to change names to bid formats for one subject
 files=(*fif)
 i=1
 for f in $files; do
