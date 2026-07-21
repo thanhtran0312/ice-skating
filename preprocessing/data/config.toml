@@ -1,0 +1,33 @@
+# Shared settings for the movable MNE preprocessing example.
+#
+# Keep root as "." when config.toml stays in the pipeline root. If the folder
+# is moved or copied, the notebooks and scripts will still work. You can also
+# replace it with an absolute path if you prefer.
+
+[paths]
+root = "."
+derivatives = "derivatives/mne-preprocessing"
+
+[dataset]
+subject = "01"
+session = "01"
+task = "IceSkating"
+runs = [1]
+
+[eye_tracker]
+left = ["MISC001", "MISC002", "MISC003"]
+right = ["MISC004", "MISC005", "MISC006"]
+
+[annotation]
+manual_annotation_run_index = 0
+skip_manual_eye_ann = false
+threshold_muscle = 10
+
+[ica]
+n_components = 30
+random_state = 97
+resample_sfreq = 200
+l_freq = 1.0
+h_freq = 40.0
+candidate_components = [0, 1]
+exclude_components = []
