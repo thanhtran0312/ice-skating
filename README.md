@@ -1,3 +1,5 @@
+**in progress**
+
 My thesis project, where we (Dr. de Vries and Dr. Wurm at the University of Trento, CiMeC) aim to disentangle the representational dynamics of position and posture in the ventral and dorsal streams.
 
 The main paper of dRSA method: de Vries, I.E.J., Wurm, M.F. Predictive neural representations of naturalistic dynamic input. Nat Commun 14, 3858 (2023). https://doi.org/10.1038/s41467-023-39355-y
