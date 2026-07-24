@@ -4,6 +4,6 @@ My thesis project, where we (Dr. de Vries and Dr. Wurm at the University of Tren
 
 The main paper of dRSA method: de Vries, I.E.J., Wurm, M.F. Predictive neural representations of naturalistic dynamic input. Nat Commun 14, 3858 (2023). https://doi.org/10.1038/s41467-023-39355-y
 
-In that paper, they used dRSA (RSA + temporal components) to compare neural signals and theoretical models across time points. A peak at a negative lag (model precedes/predicts the neural signal in time) indicates a predictive signal; a peak at a positive lag (neural signal follows the model) indicates a reactive one.
+In that paper, they used dRSA (RSA + temporal components) to compare neural signals and theoretical models, such as pixelwise luminance, optical fllow, body position, body posture (inferenced from ViTPose), etc., across time points. A peak at a negative lag (model precedes/predicts the neural signal in time) indicates a predictive signal; a peak at a positive lag (neural signal follows the model) indicates a reactive one.
 
 Here, I use Ice Skating videos to add a position model to separate body posture and body position to see what type of features is more representative in dorsal and ventral streams.
