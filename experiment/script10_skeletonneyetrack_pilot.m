@@ -1,3 +1,4 @@
+%% this script is a skeleton of the experiment, MEG, triggers, and output matrix yet.
 %% 1.cleanup, debug
 close all;
 clearvars -except subnum runnum
@@ -60,7 +61,7 @@ end
 
 % - get subnum, runnum
 prompt = {'\fontsize{14}Subject number','\fontsize{14}Run number ( 1 or 2 = practice )'};
-if defaultinput{2} > 1
+if defaultinput{2} > 1       
     dlgtitle = ['Previous run: ' num2str(str2double(defaultinput{2})-1)];
 else
     dlgtitle = 'First run for this subject';
