@@ -1,4 +1,3 @@
-%% this script is a skeleton of the experiment, MEG, triggers, and output matrix yet.
 %% 1.cleanup, debug
 close all;
 clearvars -except subnum runnum
