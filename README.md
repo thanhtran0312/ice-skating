@@ -8,4 +8,4 @@ In that paper, they used dRSA (RSA + temporal components) to compare neural sign
 
 Here, I use Ice Skating videos to add a position model to separate body posture (feature extraction from ViTPose) and body position (pelvis coordinate) to see what type of features is more representative in dorsal and ventral streams.
 
-We may try semantic models for action classification (not sure yet).
+We may try semantic models for action classification (not sure yet) and different models to regress out multicollinearity (PCR, Ridge Regression, Lasso, etc).
