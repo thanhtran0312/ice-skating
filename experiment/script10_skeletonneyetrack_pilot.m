@@ -1,4 +1,5 @@
-%% this script is a skeleton of the experiment, MEG, triggers, and output matrix yet.
+%% this script is to run the experiment with Psychtoolbox in Matlab, tailored to the MEG & eye-tracking systems at CiMeC. Output is a matrix with bunch of information (line 234-246).
+
 %% 1.cleanup, debug
 close all;
 clearvars -except subnum runnum
