@@ -1,19 +1,3 @@
-"""Fit and apply ICA to reduce artefacts in DAD MEG recordings.
-
-This script is the Python-script version of ``03_ica.ipynb``. It preserves the
-notebook processing order while collecting visual review plots in an MNE report
-instead of relying on inline notebook display.
-
-Usage
------
-Run from a Python environment with MNE-Python installed:
-
-    python /Volumes/MORWUR/Projects/SHARED/mne-meg-preprocessing-pipeline/code/03_ica.py
-
-To process a different participant or session, edit ``config.toml``. The main
-settings are ``dataset.subject``, ``dataset.session``, ``dataset.task``,
-``dataset.runs``, and the ``ica`` settings.
-
 Manual ICA-review workflow
 --------------------------
 The central decision in this step is manual. Fit the ICA model, inspect the
