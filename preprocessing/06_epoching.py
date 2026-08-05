@@ -158,8 +158,7 @@ for i, run in enumerate(config["dataset"]["runs"]):
     data = []
     meta_rows = []
     for idx, trial in enumerate(trials_for_one_run):
-        raw = trial  # or trial['raw'] depending on which list you're using
-        # crop to common duration BEFORE resampling (see below)
+        raw = trial  
         raw_cropped = raw.copy().crop(tmin=0, tmax=(target_len - 1) / raw.info['sfreq'])
         data.append(raw_cropped.get_data())
         meta_rows.append({"run": i, "trial": idx})
