@@ -144,7 +144,7 @@ for i, run in enumerate(config["dataset"]["runs"]):
         'response': set(range(120, 129)),
         'movie_restart': set(range(131,149))            # trig_movie_restart = 130 + (occ_count_within_trial-1)*6 + currentcondition(itrial)
         }
-
+    # electricity went out in the last run of subject number 4 so we only have 4 trials 
     if file == deriv_dir / f"sub-04_ses-01_task-IceSkating_run-06_desc-ica_meg.fif":
         trial_segments = epoch(raw, trigger_values_config, n_trials=4)
     else:
