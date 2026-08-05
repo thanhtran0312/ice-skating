@@ -151,7 +151,9 @@ for i, run in enumerate(config["dataset"]["runs"]):
         trial_segments = epoch(raw, trigger_values_config, n_trials=6) # a list of each trial appended, still include catch trials
     trials_for_one_run = remove_catch_trials(trial_segments, trigger_values_config) # a list of 6 trials, catch trials excluded
 
-    ## resample to a common length
+    ## each trial after excluding catch trials is supposed to be of the same length of the stimulus video,
+    ## but they are some miliseconds different because of trigger delays, so i need to resample all trials 
+    ## to a common length, here taking the shortest length of all trials
 
     target_len = min([trials_for_one_run[j].duration for j in range(len(trials_for_one_run))])
 
