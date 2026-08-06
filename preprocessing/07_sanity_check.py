@@ -108,5 +108,7 @@ for i in range(sub):
         dfsub = df[(df['subnum'] == i+1) & (df['runnum'] == j+1)]
         n_occs = np.isin(dfsub['trigger'],list(trigger_values_config['occlusion_onset'])).sum()
         occs[i,j] = n_occs
+if occs_fif != occs:
+    diff = occs_fif - occs
+    raise ValueError(f'{diff}')
 
-diff = occs_fif - occs
