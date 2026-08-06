@@ -75,8 +75,12 @@ for file in maxfilter_files:
     signal.filter(l_freq=0.01, h_freq=None, picks='meg', verbose=True)
 
     sfreq = signal.info['sfreq']
-    events = mne.find_events(signal, stim_channel='STI101', min_duration=2/sfreq, verbose=True)
-
+    events = mne.find_events(
+            signal,
+            stim_channel="STI101",
+            shortest_event=1,
+            initial_event=True,
+        )
     start_events = events[np.isin(events[:, 2], list(trial_start_codes))]
     end_events   = events[np.isin(events[:, 2], list(trial_end_codes))]
 
