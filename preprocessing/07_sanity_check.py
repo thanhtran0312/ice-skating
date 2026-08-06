@@ -84,4 +84,29 @@ for s,subject in enumerate(subjects):
 
         occ_events = events[np.isin(events[:, 2], list(trigger_values_config['occlusion_onset']))]
         occs_fif[s,i] = len(occ_events)
-np.save('occs_fif.npy', occs_fif)
+# np.save('occs_fif.npy', occs_fif)
+
+folders = glob.glob('/Volumes/THANH/IceSkating/data/matlab&eyetrack/SUB*')
+output_matrices = []
+for folder in folders:
+    matrices = glob.glob(os.path.join(folder,'*mat'))
+    output_matrices.extend(matrices)
+output_matrices = natsort.natsorted(output_matrices)
+outputs = []
+for matrix in output_matrices:
+    mat = loadmat(matrix, struct_as_record=False, squeeze_me=True)
+    output = mat['output']  # this is a numpy array of MATLAB struct objects (mat_struct)
+    outputs.extend(output)
+    
+records = []
+for entry in outputs:
+    records.append({field: getattr(entry, field) for field in entry._fieldnames})
+df = pd.DataFrame(records)
+occs = np.zeros((4,6))
+for i in range(sub):
+    for j in range(run):
+        dfsub = df[(df['subnum'] == i+1) & (df['runnum'] == j+1)]
+        n_occs = np.isin(dfsub['trigger'],list(trigger_values_config['occlusion_onset'])).sum()
+        occs[i,j] = n_occs
+
+diff = occs_fif - occs
