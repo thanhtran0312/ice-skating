@@ -12,3 +12,14 @@ each subject goes through 6 runs, where each run has 6 trials, each trial showin
 to run any of the script for more than one subject, use parser; eg, from the terminal, run:
 
 for sub in {01,02,03,04}; do   python 06_epoching.py "sub-$sub"; done
+
+tips: after each step, run a sanity check to see if len(start_events) == n_trials (otherwise you realize in the end and rerun all steps so many times, talking from experience); e.g:
+
+events = mne.find_events(
+                signal,
+                stim_channel="STI101",
+                shortest_event=1,
+                initial_event=True,
+            )
+        start_events = events[np.isin(events[:, 2], list(trigger_values_config['trial_start']))]
+        end_events   = events[np.isin(events[:, 2], list(trigger_values_config['trial_end']))]
