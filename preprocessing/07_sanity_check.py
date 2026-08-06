@@ -79,7 +79,7 @@ for s,subject in enumerate(subjects):
         events = mne.find_events(
                 raw,
                 stim_channel="STI101",
-                min_duration = 2/sfreq
+                shortest_event=1
                 )
 
         occ_events = events[np.isin(events[:, 2], list(trigger_values_config['occlusion_onset']))]
