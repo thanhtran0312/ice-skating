@@ -115,6 +115,7 @@ RestrictKeysForKbCheck([esc space right left up down cal val enter congruent inc
 screen = max(Screen('Screens')); 
 PsychImaging('PrepareConfiguration');
 PsychImaging('AddTask','General','UseVirtualFramebuffer');
+
 % define colors
 white = WhiteIndex(screen);
 black = BlackIndex(screen);
