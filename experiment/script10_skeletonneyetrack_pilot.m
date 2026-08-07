@@ -1,5 +1,5 @@
-%% this script is to run the experiment with Psychtoolbox in Matlab, tailored to the MEG & eye-tracking systems at CiMeC. Output is a matrix with bunch of information (line 234-246).
-
+%% 
+%% this script is a skeleton of the experiment, MEG, triggers, and output matrix yet.
 %% 1.cleanup, debug
 close all;
 clearvars -except subnum runnum
@@ -7,17 +7,20 @@ clc;
 sca; % closes experiment
 
 
-MEG = false;
-trackeye = false;
+MEG = true;
+trackeye = true;
   
 % F or debugging purposes this makes experiment transparent
-debug = true;
-if debug      
+debug = false;
+if debug
     PsychDebugWindowConfiguration([], 1);
     Screen('Preference', 'SkipSyncTests', 1);%1 = don't do screen sync + size tests
 else
     Screen('Preference', 'SkipSyncTests', 0);% 0 = do screen sync + size tests
 end
+
+
+  
 %% 2.parameters: 
 % path 
 if MEG
@@ -27,6 +30,7 @@ else
     rootdir = '/Users/goal0312/Desktop/thesis';  
     stimdir = fullfile(rootdir, '7_experiment');
 end
+
 addpath(genpath(stimdir));
 load(fullfile(stimdir,"rescaled_coords.mat"),"keypoints_new")
 load(fullfile(stimdir,"condmat.mat"),"condmat")
@@ -34,7 +38,7 @@ keypoints_new = permute(keypoints_new, [4,1,2,3]);
       
 % movie, 
 fps = 50;
-audiovolume = 0;sca
+audiovolume = 0;
 colors = [27 158 119;217 95 2;117 112 179;231,41,138;102,166,30]/255;% colorblind friendly colors in RGB values between 0 and 1
 crosssize = 9;% fixation cross size in pixels 
 crosswidth = round(crosssize/3);% fixation cross thickness in pixels
@@ -61,8 +65,8 @@ if exist('runnum','var')
 end
 
 % - get subnum, runnum
-prompt = {'\fontsize{14}Subject number','\fontsize{14}Run number ( 1 or 2 = practice )'};
-if defaultinput{2} > 1       
+prompt = {'\fontsize{14}Subject number','\fontsize{14}Run number'};
+if defaultinput{2} > 1
     dlgtitle = ['Previous run: ' num2str(str2double(defaultinput{2})-1)];
 else
     dlgtitle = 'First run for this subject';
@@ -85,7 +89,7 @@ filename = sprintf('ProjectIceSkating_subject%02d_run%d',subnum,runnum);
 Eyefilename = sprintf('Aice%02dr%02d.edf',subnum,runnum);
 
 if exist([savedir filesep filename '.mat'],'file') && runnum > 2 && subnum ~= 99
-    error(['\n   stopped because the filename %s.mat already exists!\n\n' ...
+    error(['\nExperiment stopped because the filename %s.mat already exists!\n\n' ...
         'If this is not a mistake, please first delete or rename the existing file in the folder.\n'...
         'If it is a mistake, please run the script again with a different subject and/or run number'],filename);
 end
@@ -108,9 +112,9 @@ congruent=KbName('RightArrow');
 enter=KbName('RETURN');
 RestrictKeysForKbCheck([esc space right left up down cal val enter congruent incongruent]);
 
-screen = max(Screen('Screens'));
+screen = max(Screen('Screens')); 
 PsychImaging('PrepareConfiguration');
-
+PsychImaging('AddTask','General','UseVirtualFramebuffer');
 % define colors
 white = WhiteIndex(screen);
 black = BlackIndex(screen);
@@ -119,8 +123,6 @@ bg = grey*0.8;
 
 % Open the experiment window
 [win, windowRect] = PsychImaging('OpenWindow',  screen, bg);
-
-
 
 % Get screen info
 [screenXpix, screenYpix] = Screen('WindowSize', win);
@@ -135,7 +137,7 @@ buttonX = xCenter - 100;
 buttonY = yCenter - yCenter*2/6;
 buttonY2 = yCenter - yCenter*1/6;
 
-% For real        hide cursocvccv
+% For real experiment hide cursocvccv
 %       cvr
 
 % if ~debug
@@ -143,8 +145,8 @@ buttonY2 = yCenter - yCenter*1/6;
 % end
 
 % Set PTB to top priority so no other running processes on this PC interfere
-topPriorityLevel = MaxPriority(win);
-Priority(topPriorityLevel);
+% topPriorityLevel = MaxPriority(win);
+% Priority(topPriorityLevel);
 
 % Flip to clear
 Screen('Flip', win);
@@ -246,88 +248,88 @@ output = struct(...
     'fixation_breaks', num2cell(NaN(1, maxtrignum)));  % <-- added fixation break count per trigger
 
 %% 5. general instructions
-if runnum == 1
-        DrawFormattedText(win,'- Thank you very much for participating in this experiment -','center', yCenter-yCenter*3/6, black);
-        DrawFormattedText(win,'- Please read the following instructions carefully and ask the experimenter if anything is unclear -','center', yCenter-yCenter*2/6, black);
-        DrawFormattedText(win,'- press button to start the instructions -','center', yCenter+yCenter*5/6, black);
-        Screen('FillRect', win, [black black black], photodiodepos);
-        Screen('Flip', win);
-        
-        if MEG
-            Datapixx('EnableDinDebounce');
-            Datapixx('SetDinLog');
-            Datapixx('StartDinLog');
-            Datapixx('RegWrRd');
-            status = Datapixx('GetDinStatus');
-            while status.newLogFrames == 0
-                Datapixx('RegWrRd');
-                status = Datapixx('GetDinStatus');
-            end
-        else
-            KbStrokeWait;
-        end    
-
-        DrawFormattedText(win,'- You are about to watch 6 different short clips of a skater -','center', yCenter-yCenter*5/6, black);
-        DrawFormattedText(win,'- Some of them are shown in a normal format, some are blurred, and some are sharpened. -','center', yCenter-yCenter*3/6, black);
-        DrawFormattedText(win,'- Try to stay as relaxed as possible without moving during an 10-minute block -','center', yCenter-yCenter*2/6, black);
-        DrawFormattedText(win,'- After each run you will have a little break -','center', yCenter-yCenter*1/6, black);
-        DrawFormattedText(win,'- There will always be a fixation cross displayed on top of the movie -','center', yCenter, black);
-        DrawFormattedText(win,'- Please always fixate this cross while watching the movie in your periphery -','center', yCenter+yCenter*1/6, black);
-        DrawFormattedText(win,'- Therefore, please try to blink as little as possible without being uncomfortable -','center', yCenter+yCenter*3/6, black);
-        DrawFormattedText(win,'- Inform the experimenter you have read the instructions -','center', yCenter+yCenter*5/6, black);
-        Screen('FillRect', win, [black black black], photodiodepos);
-        Screen('Flip', win);
-        KbStrokeWait;
-    
-        DrawFormattedText(win,'- For each trial, you will have to perform 1 of 2 possible tasks -','center', yCenter-yCenter*6/7, black);
-        DrawFormattedText(win,'- The first task is that you simply pay careful attention to the posture of the skater. -','center', yCenter-yCenter*5/7, black);
-        DrawFormattedText(win,'- In this case the fixation cross is always orange.-','center', yCenter-yCenter*4/7, black);
-        DrawFormattedText(win,'- At unexpected moments your attention to the movie will be tested: -','center', yCenter-yCenter*3/7, black);
-        DrawFormattedText(win,'- The movie screen will turn black for a brief second','center', yCenter-yCenter*2/7, black);
-    
-        if MEG
-            DrawFormattedText(win,'- On the screen, there will be a frame showing the posture of the skater.-','center', yCenter-yCenter*1/7, black);
-            DrawFormattedText(win,'- You will need to indicate whether that was the correct posture of the skater-','center', yCenter, black);
-            DrawFormattedText(win,'-before the occlusion. (by pressing the green button) -','center', yCenter+yCenter*1/7, black);
-            DrawFormattedText(win,'- Or whether it was a different posture (by pressing the red button) -','center', yCenter+yCenter*2/7, black);
-        else
-            DrawFormattedText(win,'- On the screen, there will be a frame showing the posture of the skater.-','center', yCenter-yCenter*1/7, black);
-            DrawFormattedText(win,'-You will need to indicate whether that was the correct posture of the skater-','center', yCenter, black);
-            DrawFormattedText(win,'before the occlusion. (by pressing the left arrow) -','center', yCenter+yCenter*1/7, black);
-            DrawFormattedText(win,'-  Or whether it was a different posture (by pressing the right arrow) -','center', yCenter+yCenter*2/7, black);
-        end
-        Screen('FillRect', win, [black black black], photodiodepos);
-        Screen('Flip', win);
-        KbStrokeWait;
-
-        DrawFormattedText(win,'- The second task is that you simply pay careful attention to the position of the skater. -','center', yCenter-yCenter*5/6, black);
-        DrawFormattedText(win,'- In this case the fixation cross is always green.-','center', yCenter-yCenter*4/6, black);
-        DrawFormattedText(win,'- At unexpected moments your attention to the movie will be tested: -','center', yCenter-yCenter*3/6, black);
-        DrawFormattedText(win,'- The movie screen will turn black for a brief second','center', yCenter-yCenter*2/6, black);
-    
-        if MEG
-            DrawFormattedText(win,'- On the screen, there will be a frame showing the position of the skater.-','center', yCenter-yCenter*1/6, black);
-            DrawFormattedText(win,'- You will need to indicate whether that was the correct position of the skater-','center', yCenter, black);
-            DrawFormattedText(win,'- before the occlusion. (by pressing the green button) -','center',yCenter+yCenter*1/6,black);
-            DrawFormattedText(win,'- Or whether it was a different position (by pressing the red button) -','center', yCenter+yCenter*2/6, black);
-        else
-            DrawFormattedText(win,'- On the screen, there will be a frame showing the position of the skater.-','center', yCenter-yCenter*1/6, black);
-            DrawFormattedText(win,'- You will need to indicate whether that was the correct position of the skater-','center', yCenter, black);
-            DrawFormattedText(win,'- before the occlusion. (by pressing the left arrow) -','center',yCenter+yCenter*1/6,black);
-            DrawFormattedText(win,'-  Or whether it was a different position (by pressing the right arrow) -','center', yCenter+yCenter*2/6, black);
-        end
-        Screen('FillRect', win, [black black black], photodiodepos);
-        Screen('Flip', win);
-        KbStrokeWait;
-
-        DrawFormattedText(win,'Before each trial, you will be informed if you should focus on the posture or position of the skater.-','center', yCenter-yCenter*2/6, black);
-        DrawFormattedText(win,'The color of the fixation cross also indicates the task of the trial, with orange for posture and green for position.','center', yCenter-yCenter*1/6, black);
-        DrawFormattedText(win,'- You will now first perform the first run -','center', yCenter+yCenter*1/6, black);
-        DrawFormattedText(win,'- Inform the experimenter you have read the instructions -','center', yCenter+yCenter*2/6, black);
-        Screen('FillRect', win, [black black black], photodiodepos);
-        Screen('Flip', win);
-        KbStrokeWait;
-end
+% if runnum == 1
+%         DrawFormattedText(win,'- Thank you very much for participating in this experiment -','center', yCenter-yCenter*3/6, black);
+%         DrawFormattedText(win,'- Please read the following instructions carefully and ask the experimenter if anything is unclear -','center', yCenter-yCenter*2/6, black);
+%         DrawFormattedText(win,'- press button to start the instructions -','center', yCenter+yCenter*5/6, black);
+%         Screen('FillRect', win, [black black black], photodiodepos);
+%         Screen('Flip', win);
+% 
+%         if MEG
+%             Datapixx('EnableDinDebounce');
+%             Datapixx('SetDinLog');
+%             Datapixx('StartDinLog');
+%             Datapixx('RegWrRd');
+%             status = Datapixx('GetDinStatus');  
+%             while status.newLogFrames == 0
+%                 Datapixx('RegWrRd');
+%                 status = Datapixx('GetDinStatus');
+%             end
+%         else
+%             KbStrokeWait;
+%         end    
+% 
+%         DrawFormattedText(win,'- You are about to watch 6 different short clips of a skater -','center', yCenter-yCenter*5/6, black);
+%         DrawFormattedText(win,'- Some of them are shown in a normal format, some are blurred, and some are sharpened. -','center', yCenter-yCenter*3/6, black);
+%         DrawFormattedText(win,'- Try to stay as relaxed as possible without moving during an 10-minute block -','center', yCenter-yCenter*2/6, black);
+%         DrawFormattedText(win,'- After each run you will have a little break -','center', yCenter-yCenter*1/6, black);
+%         DrawFormattedText(win,'- There will always be a fixation cross displayed on top of the movie -','center', yCenter, black);
+%         DrawFormattedText(win,'- Please always fixate this cross while watching the movie in your periphery -','center', yCenter+yCenter*1/6, black);
+%         DrawFormattedText(win,'- Therefore, please try to blink as little as possible without being uncomfortable -','center', yCenter+yCenter*3/6, black);
+%         DrawFormattedText(win,'- Inform the experimenter you have read the instructions -','center', yCenter+yCenter*5/6, black);
+%         Screen('FillRect', win, [black black black], photodiodepos);
+%         Screen('Flip', win);
+%         KbStrokeWait;
+% 
+%         DrawFormattedText(win,'- For each trial, you will have to perform 1 of 2 possible tasks -','center', yCenter-yCenter*6/7, black);
+%         DrawFormattedText(win,'- The first task is that you simply pay careful attention to the posture of the skater. -','center', yCenter-yCenter*5/7, black);
+%         DrawFormattedText(win,'- In this case the fixation cross is always orange.-','center', yCenter-yCenter*4/7, black);
+%         DrawFormattedText(win,'- At unexpected moments your attention to the movie will be tested: -','center', yCenter-yCenter*3/7, black);
+%         DrawFormattedText(win,'- The movie screen will turn black for a brief second','center', yCenter-yCenter*2/7, black);
+% 
+%         if MEG
+%             DrawFormattedText(win,'- On the screen, there will be a frame showing the posture of the skater.-','center', yCenter-yCenter*1/7, black);
+%             DrawFormattedText(win,'- You will need to indicate whether that was the correct posture of the skater-','center', yCenter, black);
+%             DrawFormattedText(win,'-before the occlusion. (by pressing the green button) -','center', yCenter+yCenter*1/7, black);
+%             DrawFormattedText(win,'- Or whether it was a different posture (by pressing the red button) -','center', yCenter+yCenter*2/7, black);
+%         else
+%             DrawFormattedText(win,'- On the screen, there will be a frame showing the posture of the skater.-','center', yCenter-yCenter*1/7, black);
+%             DrawFormattedText(win,'-You will need to indicate whether that was the correct posture of the skater-','center', yCenter, black);
+%             DrawFormattedText(win,'before the occlusion. (by pressing the left arrow) -','center', yCenter+yCenter*1/7, black);
+%             DrawFormattedText(win,'-  Or whether it was a different posture (by pressing the right arrow) -','center', yCenter+yCenter*2/7, black);
+%         end
+%         Screen('FillRect', win, [black black black], photodiodepos);
+%         Screen('Flip', win);
+%         KbStrokeWait;
+% 
+%         DrawFormattedText(win,'- The second task is that you simply pay careful attention to the position of the skater. -','center', yCenter-yCenter*5/6, black);
+%         DrawFormattedText(win,'- In this case the fixation cross is always green.-','center', yCenter-yCenter*4/6, black);
+%         DrawFormattedText(win,'- At unexpected moments your attention to the movie will be tested: -','center', yCenter-yCenter*3/6, black);
+%         DrawFormattedText(win,'- The movie screen will turn black for a brief second','center', yCenter-yCenter*2/6, black);
+% 
+%         if MEG
+%             DrawFormattedText(win,'- On the screen, there will be a frame showing the position of the skater.-','center', yCenter-yCenter*1/6, black);
+%             DrawFormattedText(win,'- You will need to indicate whether that was the correct position of the skater-','center', yCenter, black);
+%             DrawFormattedText(win,'- before the occlusion. (by pressing the green button) -','center',yCenter+yCenter*1/6,black);
+%             DrawFormattedText(win,'- Or whether it was a different position (by pressing the red button) -','center', yCenter+yCenter*2/6, black);
+%         else
+%             DrawFormattedText(win,'- On the screen, there will be a frame showing the position of the skater.-','center', yCenter-yCenter*1/6, black);
+%             DrawFormattedText(win,'- You will need to indicate whether that was the correct position of the skater-','center', yCenter, black);
+%             DrawFormattedText(win,'- before the occlusion. (by pressing the left arrow) -','center',yCenter+yCenter*1/6,black);
+%             DrawFormattedText(win,'-  Or whether it was a different position (by pressing the right arrow) -','center', yCenter+yCenter*2/6, black);
+%         end
+%         Screen('FillRect', win, [black black black], photodiodepos);
+%         Screen('Flip', win);
+%         KbStrokeWait;
+% 
+%         DrawFormattedText(win,'Before each trial, you will be informed if you should focus on the posture or position of the skater.-','center', yCenter-yCenter*2/6, black);
+%         DrawFormattedText(win,'The color of the fixation cross also indicates the task of the trial, with orange for posture and green for position.','center', yCenter-yCenter*1/6, black);
+%         DrawFormattedText(win,'- You will now first perform the first run -','center', yCenter+yCenter*1/6, black);
+%         DrawFormattedText(win,'- Inform the experimenter you have read the instructions -','center', yCenter+yCenter*2/6, black);
+%         Screen('FillRect', win, [black black black], photodiodepos);
+%         Screen('Flip', win);
+%         KbStrokeWait;
+% end
     
 DrawFormattedText(win,'- Please remember to not move your eyes but keep fixating the cross -','center', yCenter - yCenter*2/4, black);
 DrawFormattedText(win,'- Please remember to blink as little as possible without being uncomfortable -','center', yCenter - yCenter*1/4, black);
@@ -338,10 +340,10 @@ else
         DrawFormattedText(win,'- When ready, press space to start the experiment -','center', yCenter, black);
 end
 Screen('FillRect', win, [black black black], photodiodepos);
-Screen('Flip', win);
+Screen('Flip', win);  
 KbStrokeWait;
     
-
+ 
 %% 6.experiment
 abortit = 0;
 blocking = 1;
@@ -353,7 +355,7 @@ for itrial = 1:size(condmat,2)
     trig_trial_start = vid2disp(itrial);
     trig_trial_end   = 60 + currentcondition(itrial);
 
-    %% --- fixation break counters: reset at the start of each trial ---
+    % --- fixation break counters: reset at the start of each trial ---
     gazeOutsideCounter = 0;   % consecutive frames outside fixation window
     fixBreakCount      = 0;   % number of distinct breaks this trial
     currentlyOutside   = false; % are we currently mid-break?
@@ -365,7 +367,7 @@ for itrial = 1:size(condmat,2)
             itrial, vid2disp(itrial), currentcondition(itrial)));
     end
 
-    %% movie for the condition
+    % movie for the condition
     if any(currentcondition(itrial) == [1,4])
             movienames = sprintf('%s%s%s%schunk_%d.mp4',stimdir,filesep,'normal',filesep,vid2disp(itrial));
     elseif any(currentcondition(itrial) == [2,5])
@@ -374,7 +376,7 @@ for itrial = 1:size(condmat,2)
             movienames = sprintf('%s%s%s%shigh_frequency_filtered_%d.mp4',stimdir,filesep,'high_frequency', filesep, vid2disp(itrial));
     end 
 
-    %% instruction about the task of this trial 
+    % instruction about the task of this trial 
     if any(currentcondition(itrial) == [1,2,3])
         DrawFormattedText(win,'Focus on POSTURE.','center',yCenter, black);
         colorID = 2;
@@ -388,7 +390,7 @@ for itrial = 1:size(condmat,2)
 
     Screen('FillRect', win, [black black black], photodiodepos);
     Screen('Flip', win);
-    WaitSecs(5); 
+    WaitSecs(2); 
 
     %countdown at start each trial
     DrawFormattedText(win, ['The movie starts in \n\n ' num2str(3)], 'center', 'center', black);
@@ -403,11 +405,19 @@ for itrial = 1:size(condmat,2)
     Screen('FillRect', win, [black black black], photodiodepos);
     Screen('Flip', win);
     WaitSecs(1); 
-       
-    %% Start movie playback
+
+    % Start movie playback
     framecount = 0;
+    
     occ_count_within_trial = 1;
     [movie, movieduration, fpsn, imgw, imgh, ~, ~] = Screen('OpenMovie', win, movienames);
+    WaitSecs(2)
+    %movieduration = Screen('GetMovieTimeIndex',movie);
+    % 
+    % if isinf(movieduration)
+    %     WaitSecs(0.5)
+    %     movieduration = Screen('GetMovieTimeIndex', movie) + Svreen('GetMovieTimeIndex',movie);
+    % end
 
     if fps ~= fpsn
         error('fps mismatch between parameters and movie file')
@@ -455,7 +465,7 @@ for itrial = 1:size(condmat,2)
     correct_response_for_this_trial = [zeros(1,ceil(n_occ_this_trial/2)) ones(1,floor(n_occ_this_trial/2))];
     correct_response_for_this_trial = correct_response_for_this_trial(randperm(length(correct_response_for_this_trial)));
 
-    %% b. frame by frame loop
+    % b. frame by frame loop
     while 1
         [keyIsDown, ~, keyCode] = KbCheck(-1);
         if (keyIsDown==1 && keyCode(esc))
@@ -763,7 +773,7 @@ for itrial = 1:size(condmat,2)
                         respMade = true;
                         if keyCode(congruent)
                             given_response_for_this_trial = 1;
-                        else
+                        else 
                             given_response_for_this_trial = 0;
                         end
                     end
@@ -940,4 +950,4 @@ end
 
 Priority(0);
 ShowCursor;
-sca;
+sca;      
