@@ -1,4 +1,5 @@
-## i have an output matrix from matlab for each run of each subject, so i compared the occlusion triggers there with the one from this script to see if the epoch cut into trials etc
+## i have an output matrix from matlab for each run of each subject, so i compared the 
+## occlusion triggers there with the one from this script to see if the epoch cut into trials etc
 
 # %%
 from pathlib import Path
