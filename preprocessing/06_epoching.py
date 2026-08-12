@@ -7,25 +7,75 @@ except ModuleNotFoundError:  # pragma: no cover - for Python < 3.11
 import numpy as np
 import pandas as pd
 import matplotlib
+from utils import import_output_matrix
 
-# Use a non-interactive Matplotlib backend so review figures can be captured in
-# the report when the script runs outside a notebook.
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+
 import mne
-from mne.preprocessing import ICA
 import sys
 
-def epoch(signal, trigger_values_config, n_trials=6):
-        """mne.Epochs() only works for fixed-length segments, this function here supports variable lengths"""
-        events = mne.find_events(
+def check_events_onerun(signal,subnum,runnum):
+    """if the events from mne.find_events() are not consistent with the one from the output matrix,
+        we remove/modify to make it consistent. reference would be output matrix because
+        triggers found with mne.find_events() usually have artefacts"""
+    output_matrix = import_output_matrix(subnum,runnum)
+    trigger = output_matrix.trigger
+    trigger = trigger[~np.isnan(trigger)].astype(int).to_numpy()
+    tmp_events = mne.find_events(
                 signal,
                 stim_channel="STI101",
                 shortest_event=1,
                 initial_event=True,
             )
-        start_events = events[np.isin(events[:, 2], list(trigger_values_config['trial_start']))]
+    for i, trig in enumerate(trigger):
+        if trig != tmp_events[:,2][i]:
+            tmp_events = np.delete(tmp_events,i,axis=0)
+    # i = np.where(trigger != tmp_events[:,2][:len(trigger)])[0]
+    # if np.size(i) == 0:
+    #     events=tmp_events
+    # else:
+    #     events = np.delete(tmp_events,i,axis=0)
+    return tmp_events
+
+
+def check_events_onetrial(trial_signal,subnum,runnum):
+    """if the events from mne.find_events() are not consistent with the one from the output matrix,
+        we remove/modify to make it consistent"""
+    tmp_events = mne.find_events(
+                trial_signal,
+                stim_channel="STI101",
+                shortest_event=1,
+                initial_event=True,
+            )
+    start_trial = tmp_events[:,2][np.isin(tmp_events[:,2],list(trigger_values_config['trial_start']))]
+    start_keep = np.r_[True, start_trial[1:] != start_trial[:-1]]
+    start_trial = start_trial[start_keep]
+    end_trial = tmp_events[:,2][np.isin(tmp_events[:,2],list(trigger_values_config['trial_end']))]
+    end_keep = np.r_[True, end_trial[1:] != end_trial[:-1]]
+    end_trial = end_trial[end_keep]
+    output_matrix = import_output_matrix(subnum,runnum)
+    trigger = output_matrix.trigger
+    trigger = trigger[~np.isnan(trigger)].astype(int).to_numpy()
+    trigger = trigger[np.where(trigger == start_trial)[0][0]:np.where(trigger==end_trial)[0][0]+1]    
+    for i, trig in enumerate(trigger):
+        if trig != tmp_events[:,2][i]:
+            tmp_events = np.delete(tmp_events,i,axis=0)
+   
+    # i = np.where(trigger != tmp_events[:,2][:len(trigger)])[0]
+    # if np.size(i) == 0:
+    #     events=tmp_events
+    # else:
+    #     events = np.delete(tmp_events,i,axis=0)
+    return tmp_events
+         
+def epoch(signal,trigger_values_config, subnum, runnum, n_trials=6):
+        """mne.Epochs() only works for fixed-length segments, this function here supports variable lengths"""   
+        events = check_events_onerun(raw,subnum,runnum)
+        start_events = events[np.isin(events[:, 2], list(trigger_values_config['trial_start']))] 
+        start_keep = np.r_[True, start_events[1:, 2] != start_events[:-1, 2]]
+        start_events = start_events[start_keep]
         end_events   = events[np.isin(events[:, 2], list(trigger_values_config['trial_end']))]
+        end_keep = np.r_[True, end_events[1:, 2] != end_events[:-1, 2]]
+        end_events = end_events[end_keep]
 
         start_time = (start_events[:,0] - signal.first_samp)
         end_time = (end_events[:,0] - signal.first_samp)
@@ -33,7 +83,7 @@ def epoch(signal, trigger_values_config, n_trials=6):
         trial_segments = []
         for i in range(n_trials):
             signal_per_trial = signal.copy().get_data(start = start_time[i], 
-                                                      stop = end_time[i])
+                                                      stop = end_time[i]+1)
             signal_per_trial = mne.io.RawArray(signal_per_trial,signal.info)
             trial_segments.append({
                 "start_trigger": start_events[i],
@@ -43,17 +93,12 @@ def epoch(signal, trigger_values_config, n_trials=6):
             })
         return trial_segments
 
-    # take catch trials out
-def remove_catch_trials(trial_segments, trigger_values_config):
+# take catch trials out
+def remove_catch_trials(trial_segments, trigger_values_config,subnum,runnum):
         trials_for_onerun = []
         for trial in trial_segments:
             signal = trial['raw']
-            events = mne.find_events(
-                signal,
-                stim_channel="STI101",
-                shortest_event=1,
-                initial_event=True,
-            )
+            events = check_events_onetrial(signal,subnum,runnum)
             # find catch trials:'occlusion_onset' = 77-88; 'movie_restart' = 131-148
             occ_events = events[np.isin(events[:, 2], list(trigger_values_config['occlusion_onset']))]
             restart_events = events[np.isin(events[:, 2], list(trigger_values_config['movie_restart']))]
@@ -135,17 +180,17 @@ all_video_ids = []     # matching video IDs per run# Step 1 — Load one run's c
 for i, run in enumerate(config["dataset"]["runs"]):
     file = ica_files[i]
     raw = mne.io.read_raw_fif(file, preload=True)
-
     # electricity went out in the last run of subject number 4 so we only have 4 trials 
     if file == deriv_dir / f"sub-04_ses-01_task-IceSkating_run-06_desc-ica_meg.fif":
-        trial_segments = epoch(raw, trigger_values_config, n_trials=4)
+        trial_segments = epoch(raw, trigger_values_config,subnum=int(subject),runnum=run, n_trials=4)
     else:
-        trial_segments = epoch(raw, trigger_values_config, n_trials=6) # a list of each trial appended, still include catch trials
+        trial_segments = epoch(raw, trigger_values_config,subnum=int(subject),runnum=run, n_trials=6) # a list of each trial appended, still include catch trials
     video_ids = [trial['start_trigger'][2] for trial in trial_segments]
-    trials_for_one_run = remove_catch_trials(trial_segments, trigger_values_config) # a list of 6 trials, catch trials excluded
+    trials_for_one_run = remove_catch_trials(trial_segments, trigger_values_config,subnum=int(subject),runnum=run) # a list of 6 trials, catch trials excluded
 
     all_runs_trials.append(trials_for_one_run)
     all_video_ids.append(video_ids)
+    
 ## resample to a common length
 segment_lens = [t.n_times for run_trials in all_runs_trials for t in run_trials]
 n_samples_target = min(segment_lens)
