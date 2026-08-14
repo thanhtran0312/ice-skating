@@ -2,7 +2,7 @@
 from pathlib import Path
 try:
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover - for Python < 3.11
+except ModuleNotFoundError: 
     import tomli as tomllib
 import numpy as np
 import pandas as pd
@@ -191,9 +191,6 @@ for i, run in enumerate(config["dataset"]["runs"]):
     all_runs_trials.append(trials_for_one_run)
     all_video_ids.append(video_ids)
     
-## resample to a common length
-segment_lens = [t.n_times for run_trials in all_runs_trials for t in run_trials]
-n_samples_target = min(segment_lens)
 
 epochs_per_run = []
 for i, (trials_for_one_run, video_ids) in enumerate(zip(all_runs_trials, all_video_ids)):
@@ -202,12 +199,12 @@ for i, (trials_for_one_run, video_ids) in enumerate(zip(all_runs_trials, all_vid
     for idx, trial in enumerate(trials_for_one_run):
         # crop to common duration BEFORE resampling 
         raw_cropped = trial.copy()
-        data.append(raw_cropped.get_data()[:, :n_samples_target])
+        data.append(raw_cropped.get_data())
         meta_rows.append({"run": i, "trial": idx,"condition": video_ids[idx]})
     data = np.stack(data)  # (n_trials, n_channels, n_times)
 
     events = np.column_stack([
-            np.arange(len(trials_for_one_run)) * n_samples_target,   
+            np.arange(len(trials_for_one_run)),   
             np.zeros(len(trials_for_one_run), dtype=int),
             np.arange(len(trials_for_one_run),dtype=int)                 # event_id = condition idx
         ])
