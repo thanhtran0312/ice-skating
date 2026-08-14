@@ -10,8 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover - for Python < 3.11
 import numpy as np
 import pandas as pd
 import matplotlib
-from utils import import_output_matrix
-from utils_checkoccframe import check_occ_frame
+from utils import import_output_matrix, check_occ_frame
 from scipy.signal import resample
 
 import mne
