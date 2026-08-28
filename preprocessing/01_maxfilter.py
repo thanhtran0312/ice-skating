@@ -23,7 +23,7 @@ mne.viz.set_browser_backend("matplotlib")
 # All user-facing settings live in config.toml. If ``root`` is relative, it is
 # interpreted relative to the config file so the whole folder can be moved.
 
-script_dir = Path('__file__').resolve().parent
+script_dir = Path(__file__).resolve().parent
 for candidate_root in (script_dir, *script_dir.parents):
     config_file = candidate_root / "config.toml"
     if config_file.exists():
