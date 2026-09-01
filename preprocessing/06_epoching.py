@@ -1,4 +1,8 @@
 
+"""here i cut the ending extra bit so all trials go to 84s - not recommended"""
+
+
+
 # %%
 from pathlib import Path
 try:
@@ -26,6 +30,7 @@ def check_events_onerun(signal,subnum,runnum):
                 shortest_event=1,
                 initial_event=True,
             )
+    tmp_events=tmp_events[tmp_events[:,2]!=200]
     for i, trig in enumerate(trigger):
         if trig != tmp_events[:,2][i]:
             tmp_events = np.delete(tmp_events,i,axis=0)
@@ -46,6 +51,7 @@ def check_events_onetrial(trigger_values_config,trial_signal,subnum,runnum):
                 shortest_event=1,
                 initial_event=True,
             )
+    tmp_events = tmp_events[tmp_events[:,2]!=200]
     start_trial = tmp_events[:,2][np.isin(tmp_events[:,2],list(trigger_values_config['trial_start']))]
     start_keep = np.r_[True, start_trial[1:] != start_trial[:-1]]
     start_trial = start_trial[start_keep]
@@ -100,12 +106,7 @@ def remove_catch_trials(trial_segments, trigger_values_config,subnum,runnum):
     trials_for_onerun = []
     for t,trial in enumerate(trial_segments):
                 signal = trial['raw']
-                tmp_events = mne.find_events(
-                                signal,
-                                stim_channel="STI101",
-                                shortest_event=1,
-                                initial_event=True,
-                            )
+                tmp_events = check_events_onetrial(trigger_values_config,signal,subnum,runnum)
                             # find catch trials:'occlusion_onset' = 77-88; 'movie_restart' = 131-148
                 occ_events = tmp_events[np.isin(tmp_events[:, 2], list(trigger_values_config['occlusion_onset']))]
                 continue_events = tmp_events[np.isin(tmp_events[:,2], list(trigger_values_config['continuation']))]
@@ -126,6 +127,9 @@ def remove_catch_trials(trial_segments, trigger_values_config,subnum,runnum):
     return trials_for_onerun
 
 # %%
+    # -----------------------------------------------------------------------------
+    # Load shared configuration
+    # -----------------------------------------------------------------------------
 if __name__ == '__main__':
     script_dir = Path(__file__).resolve().parent
     for candidate_root in (script_dir, *script_dir.parents):
@@ -157,7 +161,7 @@ if __name__ == '__main__':
     bids_subject = f"sub-{subject}"
     bids_session = f"ses-{session}"
     bids_prefix = f"{bids_subject}_{bids_session}_task-{task}"
-
+    raw_dir = root / bids_subject / bids_session / "meg"
     deriv_root = root / config["paths"]["derivatives"]
     deriv_dir = deriv_root / bids_subject / bids_session / "meg"
     report_dir = deriv_root / bids_subject / bids_session / "reports"
@@ -179,7 +183,8 @@ if __name__ == '__main__':
             'movie_restart': set(range(111,129)), 
             'continuation': set(range(131,149))
             }
-
+    target_len = 4200
+    target_sfreq = 50.0
     all_runs_trials = []   # list of lists: trials_for_one_run per run
     all_video_ids = []     # matching video IDs per run# Step 1 — Load one run's cleaned continuous data + events.
     for i, run in enumerate(config["dataset"]["runs"]):
@@ -191,31 +196,48 @@ if __name__ == '__main__':
         else:
             trial_segments = epoch(raw, trigger_values_config,subnum=subject,runnum=run, n_trials=6) # a list of each trial appended, still include catch trials
         video_ids = [trial['start_trigger'][2] for trial in trial_segments]
-        trials_for_one_run = remove_catch_trials(trial_segments, trigger_values_config,subnum=subjects,runnum=run) # a list of 6 trials, catch trials excluded
+        trials_for_one_run = remove_catch_trials(trial_segments, trigger_values_config,subnum=subject,runnum=run) # a list of 6 trials, catch trials excluded
 
         all_runs_trials.append(trials_for_one_run)
         all_video_ids.append(video_ids)
-    ## resample to a common length
 
+    # downsample    
+    all_video_trials = [[],[],[],[],[],[]]
+    for r,run in enumerate(all_runs_trials):
+        for t, trial in enumerate(run):
+            trial_downsampled = trial.copy().resample(sfreq=target_sfreq)
+            all_video_trials[r].append(trial_downsampled)
+        
     epochs_per_run = []
-    for i, (trials_for_one_run, video_ids) in enumerate(zip(all_runs_trials, all_video_ids)):
+    for i, (trials_for_one_run, video_ids) in enumerate(zip(all_video_trials, all_video_ids)):
         data = []
         meta_rows = []
         for idx, trial in enumerate(trials_for_one_run):
             raw_cropped = trial.copy()
-            data.append(raw_cropped.get_data())
+            x = raw_cropped.get_data()
+            current_len = x.shape[1]
+
+            if current_len < target_len:
+                pad_len = target_len - current_len
+                x = np.pad(
+                    x,
+                    ((0,0),(0,pad_len)),
+                    mode='edge')
+            elif current_len > target_len:
+                x = x[:, :target_len]
+
+            data.append(x)
             meta_rows.append({"run": i, "trial": idx,"condition": video_ids[idx]})
-        data = np.stack(data)  # (n_trials, n_channels, n_times)
+        
+            events = np.column_stack([
+                    np.arange(len(trials_for_one_run)),   
+                    np.zeros(len(trials_for_one_run), dtype=int),
+                    np.arange(len(trials_for_one_run),dtype=int)                 # event_id = condition idx
+                ])
 
-        events = np.column_stack([
-                np.arange(len(trials_for_one_run)),   
-                np.zeros(len(trials_for_one_run), dtype=int),
-                np.arange(len(trials_for_one_run),dtype=int)                 # event_id = condition idx
-            ])
-
+        data = np.stack(data)
         ep = mne.EpochsArray(data, trials_for_one_run[0].info, events=events, tmin=0, verbose=False)
         ep.metadata = pd.DataFrame(meta_rows)
         epochs_per_run.append(ep)
-        
     epochs_all = mne.concatenate_epochs(epochs_per_run)
     epochs_all.save(output_file,overwrite=True)
